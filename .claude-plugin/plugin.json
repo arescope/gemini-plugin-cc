@@ -1,0 +1,11 @@
+{
+  "name": "gemini",
+  "description": "Use Gemini CLI from Claude Code to review code, analyze codebases, or delegate tasks. Leverages Gemini's 1M token context window for whole-codebase analysis.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Alberto Resco Perez"
+  },
+  "repository": "https://github.com/arescope/gemini-plugin-cc",
+  "license": "Apache-2.0",
+  "keywords": ["gemini", "gemini-cli", "code-review", "architecture-analysis", "multi-model", "second-opinion", "background-tasks", "large-context"]
+}
