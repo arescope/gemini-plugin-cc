@@ -6,11 +6,18 @@ This plugin is for Claude Code users who want to leverage Gemini's **1M token co
 
 ## Install
 
-### From the Claude Code Plugin Marketplace (recommended)
+### From the personal plugin marketplace
 
-> **Note:** This plugin is pending marketplace approval. Until then, install from the personal marketplace using the GitHub URL.
+> **Note:** This plugin is pending approval for the official Claude Code marketplace. Until then, install from the personal marketplace below.
 
-In Claude Code, run:
+**Step 1** — Add the marketplace registry:
+```
+/plugins marketplace add arescope/claude-plugins
+```
+
+**Step 2** — Install the Gemini plugin from the registry.
+
+### From GitHub URL (direct)
 ```
 /install-plugin https://github.com/arescope/gemini-plugin-cc
 ```
