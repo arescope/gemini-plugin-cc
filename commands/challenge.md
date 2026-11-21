@@ -20,4 +20,4 @@ Run a challenge review via Gemini. Defaults to skepticism — assumes bugs exist
    node "${CLAUDE_PLUGIN_ROOT}/scripts/gemini-companion.mjs" challenge $ARGUMENTS
    ```
 
-4. Return the output verbatim.
+4. Return the output verbatim. If the command fails, show its error message and suggest `/gemini:setup`; do not review the changes yourself instead.

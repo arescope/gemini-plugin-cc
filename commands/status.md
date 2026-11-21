@@ -1,6 +1,6 @@
 ---
 description: Show status of Gemini background jobs. Optionally pass a job ID for single-job details. Supports --all.
-argument-hint: "[job-id] [--wait] [--all]"
+argument-hint: "[job-id] [--all]"
 disable-model-invocation: true
 allowed-tools: Bash(node:*)
 ---

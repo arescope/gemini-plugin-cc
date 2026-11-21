@@ -149,7 +149,7 @@ assert_file_gone "gemini-aliases.sh removed" "$PLUGIN_ROOT/scripts/gemini-aliase
 echo ""
 echo "=== Lib Module Tests ==="
 
-LIB_MODULES=("args.mjs" "fs.mjs" "gemini.mjs" "git.mjs" "job-control.mjs" "process.mjs" "prompts.mjs" "render.mjs" "state.mjs" "tracked-jobs.mjs" "workspace.mjs" "types.d.ts")
+LIB_MODULES=("args.mjs" "agy.mjs" "git.mjs" "job-control.mjs" "process.mjs" "prompts.mjs" "render.mjs" "state.mjs" "tracked-jobs.mjs" "workspace.mjs")
 for mod in "${LIB_MODULES[@]}"; do
   assert_file_exists "scripts/lib/${mod}" "$PLUGIN_ROOT/scripts/lib/${mod}"
 done
@@ -184,7 +184,7 @@ assert_file_exists "skills/gemini-prompting/references/gemini-prompt-antipattern
 echo ""
 echo "=== Node.js Test Files ==="
 
-NODE_TESTS=("args.test.mjs" "gemini.test.mjs" "git.test.mjs" "process.test.mjs" "render.test.mjs" "state.test.mjs" "commands.test.mjs" "helpers.mjs")
+NODE_TESTS=("args.test.mjs" "agy.test.mjs" "jobs.test.mjs" "resume.test.mjs" "gate.test.mjs" "git.test.mjs" "process.test.mjs" "render.test.mjs" "state.test.mjs" "commands.test.mjs" "helpers.mjs")
 for t in "${NODE_TESTS[@]}"; do
   assert_file_exists "tests/${t}" "$PLUGIN_ROOT/tests/${t}"
 done

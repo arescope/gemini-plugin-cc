@@ -27,24 +27,16 @@ Use with `--model` on any command:
 
 | Alias | Model |
 |-------|-------|
-| `flash`, `fast` | gemini-3-flash-preview (default, fastest) |
-| `pro`, `deep` | gemini-3.1-pro-preview (most capable) |
-| `lite` | gemini-2.5-flash-lite (cheapest) |
-| `flash-2` | gemini-2.5-flash |
-| `pro-2` | gemini-2.5-pro |
+| `argon`, `pro` | gemini-4-argon — default choice for most engineering work |
+| `carbon`, `deep` | gemini-4-carbon — frontier model for deep, complex tasks |
+| `hydrogen` | gemini-4-hydrogen — fast and efficient |
+| `flash`, `fast`, `lite` | gemini-3.8-flash — fastest and cheapest |
+
+Without `--model`, your `agy` default model is used. Any other value is passed through unchanged — see `agy models` for the full list.
 
 ## Effort Levels
 
-Use with `--effort` on any command (maps to Gemini thinking budget):
-
-| Level | Budget |
-|-------|--------|
-| `low` | Light reasoning |
-| `medium` | Standard |
-| `high` | Deep reasoning |
-| `xhigh`, `max` | Maximum |
-| `none` | No thinking |
-| `<number>` | Exact token count |
+Use with `--effort` on any command: `low`, `medium`, `high`, `xhigh`, `max`. Supported levels depend on the model; without the flag the model's default is used.
 
 ## Review Gate
 
@@ -57,7 +49,7 @@ Use with `--effort` on any command (maps to Gemini thinking budget):
 
 ```
 /gemini:review                                    # Auto-detect scope
-/gemini:review --model pro --effort high --base main
+/gemini:review --model argon --effort high --base main
 /gemini:analyze                                   # Interactive menu
 /gemini:consult --model flash --effort low quick fix
 /gemini:challenge question the caching design

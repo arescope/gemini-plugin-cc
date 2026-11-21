@@ -32,6 +32,10 @@ describe("resolveReviewTarget", () => {
     const target = resolveReviewTarget(tmpDir, {});
     assert.equal(target.mode, "working-tree");
   });
+  it("rejects a base that looks like an option", () => {
+    assert.throws(() => resolveReviewTarget(tmpDir, { base: "--output=/tmp/x" }), /Invalid --base/);
+  });
+
   it("uses branch mode when base is specified", () => {
     const target = resolveReviewTarget(tmpDir, { base: "main" });
     assert.equal(target.mode, "branch");

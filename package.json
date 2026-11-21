@@ -1,13 +1,14 @@
 {
   "name": "gemini-plugin-cc",
-  "version": "1.0.0",
-  "description": "Use Gemini CLI from Claude Code to review code, analyze codebases, or delegate tasks.",
+  "version": "2.0.0",
+  "description": "Use Gemini models from Claude Code — via Google's Antigravity CLI (agy) — to review code, analyze codebases, or delegate tasks.",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "test": "node --test tests/args.test.mjs tests/gemini.test.mjs tests/git.test.mjs tests/process.test.mjs tests/render.test.mjs tests/state.test.mjs tests/commands.test.mjs tests/runtime.test.mjs",
+    "test": "node --test tests/args.test.mjs tests/agy.test.mjs tests/git.test.mjs tests/process.test.mjs tests/render.test.mjs tests/state.test.mjs tests/commands.test.mjs tests/runtime.test.mjs tests/jobs.test.mjs tests/resume.test.mjs tests/gate.test.mjs",
+    "typecheck": "tsc --noEmit",
     "test:structure": "bash tests/test-plugin-structure.sh"
   },
   "repository": {
@@ -18,7 +19,8 @@
   "license": "Apache-2.0",
   "keywords": [
     "gemini",
-    "gemini-cli",
+    "antigravity",
+    "agy",
     "claude-code",
     "claude-code-plugin",
     "code-review",

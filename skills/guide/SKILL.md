@@ -25,49 +25,39 @@ Use with `--model` on any command:
 
 | Alias | Model |
 |-------|-------|
-| `flash`, `fast` | gemini-3-flash-preview (default, fastest) |
-| `pro`, `deep` | gemini-3.1-pro-preview (most capable) |
-| `lite` | gemini-2.5-flash-lite (cheapest) |
-| `flash-2` | gemini-2.5-flash |
-| `pro-2` | gemini-2.5-pro |
+| `argon`, `pro` | gemini-4-argon — default choice for most engineering work |
+| `carbon`, `deep` | gemini-4-carbon — frontier model for deep, complex tasks |
+| `hydrogen` | gemini-4-hydrogen — fast and efficient |
+| `flash`, `fast`, `lite` | gemini-3.8-flash — fastest and cheapest |
+
+Without `--model`, your `agy` default model is used. Any other value is passed through unchanged — see `agy models` for the full list.
 
 ## Effort Levels
 
-Use with `--effort` on any command (maps to Gemini thinking budget):
-
-| Level | Budget |
-|-------|--------|
-| `low` | Light reasoning |
-| `medium` | Standard |
-| `high` | Deep reasoning |
-| `xhigh`, `max` | Maximum |
-| `none` | No thinking |
-| `<number>` | Token count |
+Use with `--effort` on any command: `low`, `medium`, `high`, `xhigh`, `max`. Supported levels depend on the model; without the flag the model's default is used.
 
 ## Review Gate
 
 ```
 /gemini:setup --enable-review-gate     # Enable
 /gemini:setup --disable-review-gate    # Disable
-/gemini:setup --gate-config model=pro  # Configure
 ```
 
 ## Runtime
 
 All commands route through `scripts/gemini-companion.mjs`. This single entry point handles:
 - Model alias resolution
-- Effort levels (reserved for future Gemini CLI support)
 - Background job tracking (`.gemini-tasks/state.json`)
 - Structured JSON output parsing
 - Session lifecycle (SessionStart/SessionEnd hooks)
 
-The stop review gate (`hooks/hooks.json`) uses Node.js and skips turns that didn't make code edits.
+The stop review gate (`hooks/hooks.json`) is off by default; when enabled it only runs if the working tree has uncommitted changes it has not already reviewed.
 
 ## Common Patterns
 
 ```
 /gemini:review                          # Auto-detect scope
-/gemini:review --model pro --effort high --base main
+/gemini:review --model argon --effort high --base main
 /gemini:analyze                         # Interactive menu
 /gemini:consult --model flash --effort low quick fix
 /gemini:challenge question the caching design
