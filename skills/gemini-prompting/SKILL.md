@@ -6,7 +6,7 @@ user-invocable: false
 
 # Gemini Prompting Guide
 
-How to compose effective prompts for Gemini CLI in this plugin.
+How to compose effective prompts for Gemini (run through the Antigravity CLI) in this plugin.
 
 ## Core principle
 

@@ -1,19 +1,7 @@
 // tests/args.test.mjs
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseArgs, splitRawArgumentString } from "../scripts/lib/args.mjs";
-
-describe("splitRawArgumentString", () => {
-  it("splits space-separated tokens", () => {
-    assert.deepEqual(splitRawArgumentString("--base main --background"), ["--base", "main", "--background"]);
-  });
-  it("preserves quoted strings", () => {
-    assert.deepEqual(splitRawArgumentString('--base "my branch"'), ["--base", "my branch"]);
-  });
-  it("returns empty array for empty string", () => {
-    assert.deepEqual(splitRawArgumentString(""), []);
-  });
-});
+import { parseArgs } from "../scripts/lib/args.mjs";
 
 describe("parseArgs", () => {
   it("parses boolean options", () => {

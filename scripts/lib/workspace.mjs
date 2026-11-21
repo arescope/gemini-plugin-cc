@@ -5,6 +5,7 @@ import path from "node:path";
 /**
  * Walk up from `cwd` to find the nearest directory containing `.git`.
  * Falls back to `cwd` if no `.git` is found.
+ * @param {string} cwd
  */
 export function resolveWorkspaceRoot(cwd) {
   let dir = path.resolve(cwd);

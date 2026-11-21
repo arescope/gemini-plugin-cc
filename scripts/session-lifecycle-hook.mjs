@@ -2,10 +2,11 @@
 // scripts/session-lifecycle-hook.mjs
 // Called by hooks.json for SessionStart and SessionEnd events.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, appendFileSync } from "node:fs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
-import { loadState, saveState, upsertJob } from "./lib/state.mjs";
+import { loadState, updateState, upsertJob } from "./lib/state.mjs";
 import { terminateProcessTree } from "./lib/process.mjs";
+import { SESSION_ID_ENV } from "./lib/tracked-jobs.mjs";
 
 const event = process.argv[2]; // "SessionStart" or "SessionEnd"
 
@@ -13,47 +14,49 @@ function readStdin() {
   try { return readFileSync(0, "utf8"); } catch { return ""; }
 }
 
+/** @param {string} raw */
 function parseHookInput(raw) {
-  try { return JSON.parse(raw); } catch { return {}; }
+  try { return JSON.parse(raw) ?? {}; } catch { return {}; }
 }
 
-async function handleSessionStart(input) {
+/** @param {{ session_id?: string, cwd?: string }} input */
+function handleSessionStart(input) {
   const sessionId = input.session_id ?? null;
   if (!sessionId) return;
-  const cwd = process.cwd();
-  const root = resolveWorkspaceRoot(cwd);
-  // Store session_id in state config so task workers can reference it
+
+  // Export the session id to every Bash command of this session, so jobs can
+  // be attributed to the session that started them (and cleaned up with it).
+  const envFile = process.env.CLAUDE_ENV_FILE;
+  if (envFile && /^[A-Za-z0-9._-]+$/.test(sessionId)) {
+    try { appendFileSync(envFile, `export ${SESSION_ID_ENV}='${sessionId}'\n`, "utf8"); } catch { /* best effort */ }
+  }
+
+  // Fallback for environments without CLAUDE_ENV_FILE. Only touch workspaces
+  // that already use the plugin — do not create state in every project.
+  const root = resolveWorkspaceRoot(input.cwd ?? process.cwd());
   const state = loadState(root);
-  state.config = state.config ?? {};
-  state.config.lastSessionId = sessionId;
-  saveState(root, state);
+  if (state.jobs.length === 0 && Object.keys(state.config).length === 0) return;
+  updateState(root, (s) => { s.config.lastSessionId = sessionId; });
 }
 
-async function handleSessionEnd(input) {
+/** @param {{ session_id?: string, cwd?: string }} input */
+function handleSessionEnd(input) {
   const sessionId = input.session_id ?? null;
   if (!sessionId) return;
-  const cwd = process.cwd();
-  const root = resolveWorkspaceRoot(cwd);
+  const root = resolveWorkspaceRoot(input.cwd ?? process.cwd());
   const state = loadState(root);
-  // Kill all running jobs for this session
-  const runningJobs = (state.jobs ?? []).filter(
-    (j) => j.status === "running" && j.sessionId === sessionId
-  );
+  // Kill all running jobs started by this session
+  const runningJobs = state.jobs.filter((j) => j.status === "running" && j.sessionId === sessionId);
   for (const job of runningJobs) {
-    if (job.pid) {
-      terminateProcessTree(job.pid);
-    }
     upsertJob(root, { id: job.id, status: "cancelled", completedAt: new Date().toISOString() });
+    terminateProcessTree(job.pid);
   }
 }
 
-const raw = readStdin();
-const input = parseHookInput(raw);
-
-if (event === "SessionStart") {
-  await handleSessionStart(input);
-} else if (event === "SessionEnd") {
-  await handleSessionEnd(input);
-}
+try {
+  const input = parseHookInput(readStdin());
+  if (event === "SessionStart") handleSessionStart(input);
+  else if (event === "SessionEnd") handleSessionEnd(input);
+} catch { /* a lifecycle hook must never break the session */ }
 
 process.exit(0);

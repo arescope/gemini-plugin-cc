@@ -1,25 +1,15 @@
 # Gemini plugin for Claude Code
 
-Use Gemini CLI from inside Claude Code for code reviews, whole-codebase analysis, or to delegate tasks.
+Use Gemini models from inside Claude Code for code reviews, whole-codebase analysis, or to delegate tasks. The plugin drives Google's [Antigravity CLI](https://antigravity.google/docs/cli/) (`agy`) in headless mode.
 
 This plugin is for Claude Code users who want to leverage Gemini's **1M token context window** alongside Claude Code's coding capabilities — giving you a "satellite view" of your codebase plus hands-on implementation power.
 
 ## Install
 
-### From the personal plugin marketplace
-
-> **Note:** This plugin is pending approval for the official Claude Code marketplace. Until then, install from the personal marketplace below.
-
-**Step 1** — Add the marketplace registry:
+### From the plugin marketplace (recommended)
 ```
-/plugins marketplace add arescope/claude-plugins
-```
-
-**Step 2** — Install the Gemini plugin from the registry.
-
-### From GitHub URL (direct)
-```
-/install-plugin https://github.com/arescope/gemini-plugin-cc
+/plugin marketplace add arescope/claude-plugins
+/plugin install gemini@arescope-plugins
 ```
 
 ### From source (local development)
@@ -31,8 +21,12 @@ claude --plugin-dir /path/to/gemini-plugin-cc
 
 ### Prerequisites
 
-1. Install Gemini CLI: `npm install -g @google/gemini-cli`
-2. Authenticate: API key from [AI Studio](https://aistudio.google.com/apikey) or `gemini auth` for OAuth
+1. Install the Antigravity CLI:
+   - macOS / Linux: `curl -fsSL https://antigravity.google/cli/install.sh | bash`
+   - Windows (PowerShell): `irm https://antigravity.google/cli/install.ps1 | iex`
+2. Authenticate, either:
+   - run `agy` once interactively and sign in with Google, or
+   - set `GEMINI_API_KEY` (from [AI Studio](https://aistudio.google.com/apikey)).
 
 Then verify:
 ```
@@ -44,10 +38,10 @@ Then verify:
 - `/gemini:review` — code review with full codebase context
 - `/gemini:challenge` — challenge review that questions design decisions
 - `/gemini:analyze` — whole-codebase analysis (architecture, patterns, security, dependencies)
-- `/gemini:consult` — consult Gemini on a task or delegate work
+- `/gemini:consult` — consult Gemini on a task or delegate work (runs as a tracked job: visible in `/gemini:status`, stoppable with `/gemini:cancel`)
 - `/gemini:setup` — check installation, auth, and manage the review gate
 - `/gemini:status`, `/gemini:result`, `/gemini:cancel` — manage background jobs
-- `gemini-consult` subagent — fires proactively for second opinions or delegation
+- `gemini-consult` subagent — fires proactively for second opinions or delegation; read-only unless you ask for changes, and tracked like any background job
 
 ## Architecture
 
@@ -59,42 +53,53 @@ All commands route through a single Node.js companion entry point (`scripts/gemi
     → resolves review target via git.mjs
     → loads prompt template via prompts.mjs
     → spawns detached task-worker
-      → runs gemini CLI with structured output
-      → parses JSON against schema
-      → writes result to .gemini-tasks/state.json
+      → writes the prompt to .gemini-tasks/<job>.prompt, spawns a detached task-worker
+        → sends the prompt to `agy` on stdin (stream-json), reads its result event
+        → writes the response to .gemini-tasks/<job>.json, status to state.json
+/gemini:result
+  → renders the stored response (reviews are parsed against the review schema)
 ```
+
+Design points:
+
+- **Failures are failures.** Auth errors, quota errors, unknown models, timeouts and non-zero exits make the command exit 1 with agy's own message (background jobs end as `error`). Nothing is ever reported as a successful empty result.
+- **Prompts travel on stdin**, never argv — no size limit on large diffs, no shell quoting on any platform.
+- **Read-only unless you say otherwise.** agy's headless default is Auto mode, which edits files without asking. The plugin pins every run to agy's default mode with review-required permissions (`config/read-only.settings.json`), so file edits and shell commands are denied. Only `--write` lifts that, via `--dangerously-skip-permissions`. The overlay sets two documented agy settings (`agentMode: ""`, `toolPermission: "request-review"`); as a safety net the plugin also checks the permission mode agy reports when a run starts and fails the run if it is not `request-review` (`agy did not honour read-only mode … check git status`), or if agy reports no permission mode at all.
+- **Safe flag handling.** User-supplied values reach agy as `--flag=value` (`--add-dir`, `--model`, `--effort`, `--conversation`), so they can never be parsed as flags. Model, effort and conversation values containing whitespace are rejected, and empty `--dirs` entries are ignored.
+- **`/gemini:setup` is cheap and honest.** It first runs `agy models` (no model call) to detect a missing sign-in, then sends one short test prompt that must be answered exactly `OK`. Errors that are not about authentication (quota, network, model) are shown as they are. With `GEMINI_API_KEY` set the `agy models` check is skipped.
+- **State is self-contained.** `.gemini-tasks/` carries its own `.gitignore`, writes are atomic, and only the 50 most recent finished jobs are kept.
+- **Jobs belong to sessions.** The worker's PID and the Claude Code session ID are recorded, so `/gemini:cancel` and session end terminate exactly the right process group. A job whose worker died is reported as failed, not left "running".
+- **Reviews see new files.** Untracked text files are included in working-tree reviews (up to 50 files, 200 KB each), not just the tracked diff.
 
 ### Module library (`scripts/lib/`)
 
 | Module | Purpose |
 |--------|---------|
 | `args.mjs` | Parse slash-command arguments |
-| `fs.mjs` | Filesystem helpers (stdin, JSON) |
-| `gemini.mjs` | Gemini CLI wrapper — alias resolution, effort mapping, output parsing |
+| `agy.mjs` | Antigravity CLI wrapper — model and effort resolution, headless invocation, result parsing |
 | `git.mjs` | Git helpers — repo check, review target, context collection |
-| `job-control.mjs` | Job lifecycle — sort, resolve, snapshot |
+| `job-control.mjs` | Job lifecycle — sort, resolve, snapshot, orphan detection |
 | `process.mjs` | Process management — binary check, tree kill |
 | `prompts.mjs` | Template loader with `{{VAR}}` interpolation |
 | `render.mjs` | Output formatting — review results, status tables, setup reports |
-| `state.mjs` | Centralized JSON state per workspace |
-| `tracked-jobs.mjs` | Job execution with progress tracking and log files |
+| `state.mjs` | Atomic JSON state per workspace, job retention |
+| `tracked-jobs.mjs` | Job records, session attribution, progress log files |
 | `workspace.mjs` | Resolve workspace root from cwd |
-| `types.d.ts` | TypeScript type definitions for all interfaces |
 
 ### Session lifecycle
 
 Three hooks via `hooks/hooks.json`:
-- **SessionStart** — propagates session ID to state
-- **SessionEnd** — kills running jobs, cleans up session state
-- **Stop** — smart review gate (skips turns that didn't make code edits)
+- **SessionStart** — exports the session ID (`GEMINI_COMPANION_SESSION_ID`) to the session's shell environment
+- **SessionEnd** — terminates background jobs started by that session
+- **Stop** — optional review gate (off by default; see below)
 
 ## Requirements
 
 | Requirement | Minimum | Recommended |
 |-------------|---------|-------------|
-| **Node.js** | 18.0+ | 22 LTS |
+| **Node.js** | 20.0+ | 24 LTS |
 | **Claude Code** | Latest | Latest |
-| **Gemini CLI** | 0.36.0+ | Latest |
+| **Antigravity CLI (`agy`)** | 1.5.7+ | Latest (built against 1.5.9) |
 | **Git** | 2.0+ | Latest |
 | **OS** | Windows, macOS, Linux | — |
 
@@ -118,14 +123,22 @@ Three hooks via `hooks/hooks.json`:
 ### Delegate a Task
 ```
 /gemini:consult investigate why the build is failing in CI
+/gemini:consult --resume-last now fix the second issue you found
 ```
 
-### Background Tasks
+`--resume-last` continues the conversation of the most recent `task` run in this workspace, and only that: reviews, analyses and the stop gate never affect it, and a task that started earlier never overwrites a newer one's thread. It fails with a clear message if there is nothing to resume. If the recorded conversation no longer exists in agy, run the task without `--resume-last` to start a new one and reset the pointer.
+
+### Background Jobs
 ```
-/gemini:consult --background investigate the flaky integration test
-/gemini:status
-/gemini:result
+/gemini:review --background --base main
+/gemini:analyze --background security audit of the payment module
+/gemini:status                 # table of recent jobs
+/gemini:status <job-id>        # details + recent log lines
+/gemini:result [job-id]        # output of the latest (or given) finished job
+/gemini:cancel [job-id]
 ```
+
+Runs time out after 10 minutes by default; set `GEMINI_COMPANION_TIMEOUT_MS` to change that for very large codebases.
 
 ### Natural Language Delegation
 Just ask Claude:
@@ -136,7 +149,13 @@ Have Gemini analyze the authentication flow across the entire codebase
 
 ## Review Gate (Stop Hook)
 
-The review gate auto-reviews Claude's code changes before each stop — powered by Gemini. It skips turns that didn't make code edits.
+The review gate has Gemini review Claude's uncommitted changes before Claude stops, and sends Claude back to work if Gemini finds a blocking issue.
+
+- Runs only when the working tree has uncommitted changes that the gate has not already reviewed — unchanged trees and clean trees cost nothing.
+- A block triggers at most one follow-up Claude turn; the gate never re-fires on a stop it caused, so it cannot loop.
+- If Gemini is unavailable (auth, quota) the gate fails open with a visible warning and retries on the next stop.
+- A review that times out (780s by default; set `GEMINI_GATE_TIMEOUT_MS` to change it) is **not** retried for the same changes, so a slow review cannot cost minutes on every stop — run `/gemini:review --background` for those. An empty reply allows silently.
+- The gate must never edit your tree: if agy does not honour read-only mode, the gate shows a prominent warning and never blocks.
 
 ```
 /gemini:setup --enable-review-gate    # Enable
@@ -145,42 +164,41 @@ The review gate auto-reviews Claude's code changes before each stop — powered 
 
 Configuration is stored in `.gemini-tasks/state.json` via the companion runtime.
 
-**Warning**: This can create a Claude/Gemini loop and may drain usage limits. Only enable when actively monitoring.
+**Note**: every gated stop is a Gemini request and can add up to a few minutes of latency. Enable it for sessions where you want that second check, not globally by habit.
 
 ## Model Aliases
 
 All commands accept short model names via `--model`:
 
-| Alias | Model | Use case |
-|-------|-------|----------|
-| `flash`, `fast` | gemini-3-flash-preview | Fastest (default) |
-| `pro`, `deep` | gemini-3.1-pro-preview | Most capable |
-| `lite` | gemini-2.5-flash-lite | Cheapest |
-| `flash-2` | gemini-2.5-flash | Previous gen fast |
-| `pro-2` | gemini-2.5-pro | Previous gen capable |
+| Alias | Model slug passed to `agy` | Use case |
+|-------|----------------------------|----------|
+| *(none)* | — (your `agy` default model) | Default |
+| `argon`, `pro` | `gemini-4-argon` | Gemini 4 Argon — default choice for most engineering work |
+| `carbon`, `deep` | `gemini-4-carbon` | Gemini 4 Carbon — frontier model for deep, complex tasks |
+| `hydrogen` | `gemini-4-hydrogen` | Gemini 4 Hydrogen — fast and efficient |
+| `flash`, `fast`, `lite` | `gemini-3.8-flash` | Gemini 3.8 Flash — fastest and cheapest |
+
+Any other value is passed to `agy` unchanged, so every slug from `agy models` works (for example `gemini-4-argon-high`). Which models you see depends on how you are signed in. An unknown model fails with agy's error and its list of available models — it never silently falls back.
 
 ```
-/gemini:review --model pro
+/gemini:review --model argon
+/gemini:challenge --model carbon --effort high
 /gemini:consult --model flash --effort low quick check
 ```
 
 ## Effort Levels
 
-Effort levels via `--effort` (reserved for future Gemini CLI support):
+`--effort` sets the model's reasoning effort and is passed straight to `agy --effort`:
 
-| Level | Budget |
-|-------|--------|
-| `low`, `l` | Light reasoning |
-| `medium`, `med`, `m` | Standard |
-| `high`, `h` | Deep reasoning |
-| `xhigh`, `max` | Maximum |
-| `none`, `off` | No thinking |
-| `<number>` | Exact token count |
+| Level | Short forms |
+|-------|-------------|
+| `low` | `l` |
+| `medium` | `med`, `m` |
+| `high` | `h` |
+| `xhigh` | `xh` |
+| `max` | — |
 
-```
-/gemini:analyze --effort high     # Deep reasoning
-/gemini:consult --effort low       # Quick pass
-```
+Not every model supports every level (Hydrogen goes up to `xhigh`, Argon offers `medium` and `high`); agy rejects an unsupported combination with a clear error. Without `--effort`, agy uses the model's default level.
 
 ## Internal Skills
 
@@ -197,13 +215,16 @@ Plus `guide` — a quick reference for all commands and options.
 ## Testing
 
 ```bash
-# Node.js unit + integration tests (76 tests)
-node --test tests/args.test.mjs tests/gemini.test.mjs tests/git.test.mjs \
-  tests/process.test.mjs tests/render.test.mjs tests/state.test.mjs \
-  tests/commands.test.mjs tests/runtime.test.mjs
+npm ci
 
-# Structure validation (91 checks)
-bash tests/test-plugin-structure.sh
+# Unit + end-to-end tests against a fake gemini binary (no network, no API key)
+npm test
+
+# Type-check the JSDoc-annotated sources
+npm run typecheck
+
+# Structure validation
+npm run test:structure
 ```
 
 ## License

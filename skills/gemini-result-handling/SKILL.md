@@ -6,7 +6,7 @@ user-invocable: false
 
 # Gemini Result Handling
 
-Rules for presenting Gemini CLI output after a review, task, or analysis run.
+Rules for presenting Gemini output after a review, task, or analysis run.
 
 ## Structured output (reviews)
 
