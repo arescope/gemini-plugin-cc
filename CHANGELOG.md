@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased
+## 2.0.1
+
+Windows reliability fix. No behaviour changes on macOS or Linux.
 
 ### Fixed
 - Windows: concurrent jobs and hooks could fail with `EPERM` while updating `.gemini-tasks/state.json`, because Windows reports a lock directory being deleted, or a state file another process has open, as `EPERM` instead of `EEXIST`. These transient errors are now retried.
+
+### Other
+- README: CI, release, version, Node, license, platform and requirement badges.
+- Tests: temp-directory cleanup retries on Windows, where a just-finished background worker can still hold the directory.
 
 ## 2.0.0
 
