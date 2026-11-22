@@ -44,6 +44,18 @@ export function loadState(workspaceRoot) {
   } catch { return { jobs: [], config: {} }; }
 }
 
+/**
+ * Windows reports a file or directory that another process briefly holds
+ * (an open handle, a pending delete) as EPERM / EACCES / EBUSY rather than
+ * EEXIST. Those are transient and safe to retry.
+ */
+const TRANSIENT_FS_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
+
+/** @param {number} ms */
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 /** @param {string} workspaceRoot @param {State} state */
 export function saveState(workspaceRoot, state) {
   ensureStateDir(workspaceRoot);
@@ -51,7 +63,18 @@ export function saveState(workspaceRoot, state) {
   const target = resolveStateFile(workspaceRoot);
   const tmp = `${target}.${process.pid}.${crypto.randomBytes(3).toString("hex")}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(state, null, 2), "utf8");
-  fs.renameSync(tmp, target);
+  // On Windows a lock-free reader (status, result) holding state.json open
+  // makes the rename fail with EPERM for a moment; retry briefly.
+  const deadline = Date.now() + 2000;
+  for (;;) {
+    try { fs.renameSync(tmp, target); return; } catch (/** @type {any} */ err) {
+      if (!TRANSIENT_FS_CODES.has(err.code) || Date.now() > deadline) {
+        try { fs.unlinkSync(tmp); } catch { /* already gone */ }
+        throw err;
+      }
+      sleepSync(10);
+    }
+  }
 }
 
 /** @param {string} workspaceRoot @param {(state: State) => void} mutate */
@@ -61,11 +84,13 @@ export function updateState(workspaceRoot, mutate) {
   const deadline = Date.now() + 5000;
   for (;;) {
     try { fs.mkdirSync(lock); break; } catch (/** @type {any} */ err) {
-      if (err.code !== "EEXIST") throw err;
+      if (err.code !== "EEXIST" && !TRANSIENT_FS_CODES.has(err.code)) throw err;
       // Checked first: a lock that cannot be removed (e.g. a Windows handle on it) must end here, not spin.
       if (Date.now() > deadline) throw new Error(`Timed out waiting for state lock: ${lock}`);
+      // Windows: the lock dir is mid-delete or briefly held — wait, don't treat it as stale.
+      if (err.code !== "EEXIST") { sleepSync(15); continue; }
       try { if (Date.now() - fs.statSync(lock).mtimeMs > 1_000) { fs.rmdirSync(lock); continue; } } catch { continue; } // stale (a holder needs ms; 1s means it crashed), or released meanwhile
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
+      sleepSync(15);
     }
   }
   try {

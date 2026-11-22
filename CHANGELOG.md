@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Windows: concurrent jobs and hooks could fail with `EPERM` while updating `.gemini-tasks/state.json`, because Windows reports a lock directory being deleted, or a state file another process has open, as `EPERM` instead of `EEXIST`. These transient errors are now retried.
+
 ## 2.0.0
 
 The plugin now drives Google's **Antigravity CLI (`agy`)** instead of the Gemini CLI, and fixes a set of reliability bugs in job control and failure handling. Built and smoke-tested against agy 1.5.9.
