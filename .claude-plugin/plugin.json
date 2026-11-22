@@ -1,7 +1,7 @@
 {
   "name": "gemini",
   "description": "Use Gemini models from Claude Code — via Google's Antigravity CLI (agy) — to review code, analyze codebases, or delegate tasks. Brings a second model and a 1M token context window to whole-codebase analysis.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "Alberto Resco Perez"
   },

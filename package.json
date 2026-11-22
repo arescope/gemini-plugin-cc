@@ -1,6 +1,6 @@
 {
   "name": "gemini-plugin-cc",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Use Gemini models from Claude Code — via Google's Antigravity CLI (agy) — to review code, analyze codebases, or delegate tasks.",
   "type": "module",
   "engines": {
