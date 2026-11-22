@@ -1,6 +1,7 @@
 # Gemini plugin for Claude Code
 
 [![CI](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/arescope/gemini-plugin-cc)](https://github.com/arescope/gemini-plugin-cc/releases/latest)
 [![Version](https://img.shields.io/github/package-json/v/arescope/gemini-plugin-cc)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Farescope%2Fgemini-plugin-cc%2Fmain%2Fpackage.json&query=%24.engines.node&label=node)](package.json)
