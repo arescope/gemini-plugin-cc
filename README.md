@@ -3,7 +3,7 @@
 [![CI](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/package-json/v/arescope/gemini-plugin-cc)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![Node](https://img.shields.io/github/package-json/engines/node/arescope/gemini-plugin-cc)](package.json)
+[![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Farescope%2Fgemini-plugin-cc%2Fmain%2Fpackage.json&query=%24.engines.node&label=node)](package.json)
 ![Platforms](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey)
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-D97757)](https://github.com/arescope/claude-plugins)
 [![Requires agy](https://img.shields.io/badge/requires-Antigravity%20CLI%20%28agy%29-4285F4)](https://antigravity.google/docs/cli/)
