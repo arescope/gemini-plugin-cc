@@ -21,11 +21,11 @@ function runCompanion(args, options = {}) {
 describe("setup --json", () => {
   it("returns valid JSON", () => {
     const result = runCompanion(["setup", "--json"]);
-    // gemini may not be installed in CI — status 0 or 1, but output must be JSON
+    // agy may not be installed in CI — status 0 or 1, but output must be JSON
     const output = result.stdout.trim();
     assert.ok(output.length > 0, "Should produce output");
     const parsed = JSON.parse(output);
-    assert.ok(typeof parsed.geminiAvailable === "boolean");
+    assert.ok(typeof parsed.agyAvailable === "boolean");
     assert.ok(typeof parsed.reviewGateEnabled === "boolean");
   });
 });

@@ -1,32 +1,26 @@
 // scripts/lib/args.mjs
 
-export function splitRawArgumentString(raw) {
-  const trimmed = (raw ?? "").trim();
-  if (!trimmed) return [];
-  const tokens = [];
-  let current = "";
-  let inQuote = false;
-  for (const ch of trimmed) {
-    if (ch === '"') { inQuote = !inQuote; }
-    else if (ch === " " && !inQuote) { if (current) tokens.push(current); current = ""; }
-    else { current += ch; }
-  }
-  if (current) tokens.push(current);
-  return tokens;
-}
-
+/**
+ * @param {string[]} argv
+ * @param {{ valueOptions?: string[], booleanOptions?: string[], aliasMap?: Record<string, string> }} [config]
+ * @returns {{ options: Record<string, any>, positionals: string[] }}
+ */
 export function parseArgs(argv, config = {}) {
   const valueSet = new Set(config.valueOptions ?? []);
   const boolSet = new Set(config.booleanOptions ?? []);
   const aliasMap = config.aliasMap ?? {};
+  /** @type {Record<string, any>} */
   const options = {};
+  /** @type {string[]} */
   const positionals = [];
   let i = 0;
   while (i < argv.length) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const name = arg.slice(2);
-      if (valueSet.has(name) && i + 1 < argv.length) { options[name] = argv[++i]; }
+      const eq = name.indexOf("=");
+      if (eq > 0 && valueSet.has(name.slice(0, eq))) { options[name.slice(0, eq)] = name.slice(eq + 1); }
+      else if (valueSet.has(name) && i + 1 < argv.length) { options[name] = argv[++i]; }
       else if (boolSet.has(name)) { options[name] = true; }
       else { positionals.push(arg); }
     } else if (arg.startsWith("-") && arg.length === 2) {

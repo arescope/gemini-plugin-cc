@@ -6,7 +6,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createTempDir, cleanTempDir, initGitRepo } from "./helpers.mjs";
-import { installFakeGemini, fakeGeminiEnv } from "./fake-gemini-fixture.mjs";
+import { installFakeAgy, fakeAgyEnv } from "./fake-agy-fixture.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPANION = path.resolve(__dirname, "..", "scripts", "gemini-companion.mjs");
@@ -34,7 +34,7 @@ function runLifecycleHook(event, input, options = {}) {
   });
 }
 
-describe("companion setup with fake gemini", () => {
+describe("companion setup with fake agy", () => {
   let tmp, binDir, env;
   beforeEach(() => {
     tmp = createTempDir();
@@ -42,26 +42,26 @@ describe("companion setup with fake gemini", () => {
   });
   afterEach(() => { cleanTempDir(tmp); });
 
-  it("detects gemini as available via fake binary", () => {
-    installFakeGemini(binDir, "version");
-    env = fakeGeminiEnv(binDir);
+  it("detects agy as available via fake binary", () => {
+    installFakeAgy(binDir, "auth-ok");
+    env = fakeAgyEnv(binDir);
     const result = runCompanion(["setup", "--json"], { cwd: tmp, env });
     const parsed = JSON.parse(result.stdout.trim());
-    assert.equal(parsed.geminiAvailable, true);
+    assert.equal(parsed.agyAvailable, true);
   });
 
-  it("detects gemini as unavailable without fake binary", () => {
-    // Use a PATH that has node (so the companion can run) but no gemini binary
+  it("detects agy as unavailable without the binary", () => {
+    // Use a PATH that has node (so the companion can run) but no agy binary
     const nodeDir = path.dirname(process.execPath);
     const sep = process.platform === "win32" ? ";" : ":";
     env = { ...process.env, PATH: tmp + sep + nodeDir };
     const result = runCompanion(["setup", "--json"], { cwd: tmp, env });
     const parsed = JSON.parse(result.stdout.trim());
-    assert.equal(parsed.geminiAvailable, false);
+    assert.equal(parsed.agyAvailable, false);
   });
 });
 
-describe("companion review with fake gemini", () => {
+describe("companion review with fake agy", () => {
   let tmp, binDir, env;
   beforeEach(() => {
     tmp = createTempDir();
@@ -74,23 +74,23 @@ describe("companion review with fake gemini", () => {
   afterEach(() => { cleanTempDir(tmp); });
 
   it("returns structured review result", () => {
-    installFakeGemini(binDir, "review-ok");
-    env = fakeGeminiEnv(binDir);
+    installFakeAgy(binDir, "review-ok");
+    env = fakeAgyEnv(binDir);
     const result = runCompanion(["review", "--json"], { cwd: tmp, env });
-    // Should not crash — companion processes the fake gemini output
+    // Should not crash — companion processes the fake agy output
     assert.equal(result.status, 0);
     const output = result.stdout.trim();
     assert.ok(output.length > 0, "Should produce output");
   });
 });
 
-describe("companion task with fake gemini", () => {
+describe("companion task with fake agy", () => {
   let tmp, binDir, env;
   beforeEach(() => {
     tmp = createTempDir();
     binDir = path.join(tmp, "bin");
-    installFakeGemini(binDir, "task-ok");
-    env = fakeGeminiEnv(binDir);
+    installFakeAgy(binDir, "task-ok");
+    env = fakeAgyEnv(binDir);
   });
   afterEach(() => { cleanTempDir(tmp); });
 
@@ -130,8 +130,8 @@ describe("companion enable/disable review gate", () => {
   beforeEach(() => {
     tmp = createTempDir();
     binDir = path.join(tmp, "bin");
-    installFakeGemini(binDir, "version");
-    env = fakeGeminiEnv(binDir);
+    installFakeAgy(binDir, "auth-ok");
+    env = fakeAgyEnv(binDir);
   });
   afterEach(() => { cleanTempDir(tmp); });
 
