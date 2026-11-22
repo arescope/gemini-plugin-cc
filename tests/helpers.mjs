@@ -9,7 +9,10 @@ export function createTempDir() {
 }
 
 export function cleanTempDir(dir) {
-  fs.rmSync(dir, { recursive: true, force: true });
+  // On Windows a just-finished background worker can still hold the directory
+  // as its cwd for a moment, so rmdir fails with EBUSY/EPERM; rmSync retries
+  // those (with linear backoff) when maxRetries is set.
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 export function initGitRepo(dir) {
