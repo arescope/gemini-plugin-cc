@@ -1,5 +1,14 @@
 # Gemini plugin for Claude Code
 
+[![CI](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/arescope/gemini-plugin-cc/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/package-json/v/arescope/gemini-plugin-cc)](package.json)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Node](https://img.shields.io/github/package-json/engines/node/arescope/gemini-plugin-cc)](package.json)
+![Platforms](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey)
+[![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-D97757)](https://github.com/arescope/claude-plugins)
+[![Requires agy](https://img.shields.io/badge/requires-Antigravity%20CLI%20%28agy%29-4285F4)](https://antigravity.google/docs/cli/)
+[![Last commit](https://img.shields.io/github/last-commit/arescope/gemini-plugin-cc)](https://github.com/arescope/gemini-plugin-cc/commits/main)
+
 Use Gemini models from inside Claude Code for code reviews, whole-codebase analysis, or to delegate tasks. The plugin drives Google's [Antigravity CLI](https://antigravity.google/docs/cli/) (`agy`) in headless mode.
 
 This plugin is for Claude Code users who want to leverage Gemini's **1M token context window** alongside Claude Code's coding capabilities — giving you a "satellite view" of your codebase plus hands-on implementation power.
